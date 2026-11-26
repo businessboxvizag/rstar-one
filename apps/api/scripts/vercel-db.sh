@@ -9,4 +9,5 @@ if [ -z "$URL" ]; then
 fi
 cd "$(dirname "$0")/.."
 DATABASE_URL="$URL" npx tsx src/cli/migrate.ts
+if [ -n "${ADMIN_RENAME_FROM:-}" ]; then DATABASE_URL="$URL" npx tsx src/cli/rename-admin.ts; fi
 DATABASE_URL="$URL" npx tsx src/cli/seed.ts
