@@ -44,7 +44,7 @@ export async function api<T = unknown>(path: string, init: { method?: string; bo
   if (!accessToken && retry) await refreshSession();
   const res = await fetch(`${API}/v1${path}`, {
     method: init.method ?? (init.body ? "POST" : "GET"),
-    headers: { "content-type": "application/json", ...(accessToken ? { authorization: `Bearer ${accessToken}` } : {}) },
+    headers: { ...(init.body !== undefined ? { "content-type": "application/json" } : {}), ...(accessToken ? { authorization: `Bearer ${accessToken}` } : {}) },
     body: init.body === undefined ? undefined : JSON.stringify(init.body),
   });
   if (res.status === 401 && retry && (await refreshSession())) return api<T>(path, init, false);

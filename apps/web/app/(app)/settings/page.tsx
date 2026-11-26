@@ -64,8 +64,13 @@ function TwoFactor() {
     );
   }
   async function start() {
-    const r = await api<{ secret: string; otpauthUrl: string }>("/auth/mfa/setup", { method: "POST" });
-    setSetup({ secret: r.secret, qr: await QRCode.toDataURL(r.otpauthUrl, { margin: 1, width: 180 }) });
+    setMsg(null);
+    try {
+      const r = await api<{ secret: string; otpauthUrl: string }>("/auth/mfa/setup", { method: "POST" });
+      setSetup({ secret: r.secret, qr: await QRCode.toDataURL(r.otpauthUrl, { margin: 1, width: 180 }) });
+    } catch (err) {
+      setMsg(err instanceof Error ? err.message : "Could not start set-up. Please try again.");
+    }
   }
   async function confirm(e: FormEvent) {
     e.preventDefault();
@@ -82,7 +87,10 @@ function TwoFactor() {
       <h2 className="font-semibold">Two-factor authentication</h2>
       <p className="text-sm text-ink-muted">{me?.security.mfaRequired ? "Required for your role." : "Recommended."} Use Google Authenticator, Microsoft Authenticator or any TOTP app.</p>
       {!setup ? (
-        <button className="btn-primary" onClick={() => void start()}>Set up</button>
+        <>
+          <button className="btn-primary" onClick={() => void start()}>Set up</button>
+          {msg && <p role="alert" className="text-sm text-red-700">{msg}</p>}
+        </>
       ) : (
         <form onSubmit={confirm} className="space-y-3">
           {/* eslint-disable-next-line @next/next/no-img-element */}

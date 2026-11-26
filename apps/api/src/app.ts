@@ -11,6 +11,7 @@ import { loadPrincipal, type Principal } from "./auth/principal.js";
 import { createMailer, type Mailer } from "./lib/mailer.js";
 import { authRoutes } from "./modules/auth/routes.js";
 import { orgRoutes } from "./modules/org/routes.js";
+import { taskRoutes } from "./modules/tasks/routes.js";
 import { roleRoutes } from "./modules/roles/routes.js";
 import { employeeRoutes } from "./modules/employees/routes.js";
 import { contentRoutes } from "./modules/content/routes.js";
@@ -46,6 +47,19 @@ export async function buildApp(config: Config, opts: { db?: Db; logger?: boolean
     logger: opts.logger === false ? false : { level: config.LOG_LEVEL, redact: ["req.headers.authorization", "req.headers.cookie"] },
     trustProxy: config.TRUST_PROXY,
     bodyLimit: 1024 * 1024, // JSON only; media never passes through the API (signed URLs)
+  });
+
+  // Browsers and some clients send "content-type: application/json" on action POSTs with no body
+  // (e.g. "Set up 2FA"). Fastify rejects that by default; treat an empty JSON body as {}.
+  app.removeContentTypeParser("application/json");
+  app.addContentTypeParser("application/json", { parseAs: "string" }, (_req, body, done) => {
+    const text = typeof body === "string" ? body : body.toString("utf8");
+    if (text.trim() === "") return done(null, {});
+    try {
+      done(null, JSON.parse(text));
+    } catch {
+      done(Object.assign(new Error("Request body is not valid JSON"), { statusCode: 400 }), undefined);
+    }
   });
 
   app.decorate("config", config);
@@ -111,6 +125,7 @@ export async function buildApp(config: Config, opts: { db?: Db; logger?: boolean
   await app.register(notificationRoutes, { prefix: "/v1" });
   await app.register(attendanceRoutes, { prefix: "/v1" });
   await app.register(leaveRoutes, { prefix: "/v1" });
+  await app.register(taskRoutes, { prefix: "/v1" });
 
   app.addHook("onClose", async () => {
     if (!opts.db) await app.db.end();
