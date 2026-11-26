@@ -14,6 +14,7 @@ export default function PeoplePage() {
   const { can } = useAuth();
   const [q, setQ] = useState("");
   const [adding, setAdding] = useState(false);
+  const [resetting, setResetting] = useState<Emp | null>(null);
   const list = useApi<{ items: Emp[] }>(`/employees?limit=100${q ? `&q=${encodeURIComponent(q)}` : ""}`);
   const canAdd = can("employees.manage") && can("users.manage");
 
@@ -22,6 +23,7 @@ export default function PeoplePage() {
       <PageHeader title="People" subtitle="Employees you are allowed to see, based on your role." actions={canAdd ? <button className="btn-primary" onClick={() => setAdding(true)}>Add employee</button> : undefined} />
       <input aria-label="Search people" className="input mb-4 max-w-sm" placeholder="Search name, employee ID or email" onKeyDown={(e) => e.key === "Enter" && setQ((e.target as HTMLInputElement).value)} />
       {adding && <AddEmployee onClose={() => setAdding(false)} onSaved={list.reload} />}
+      {resetting && <ResetAccess emp={resetting} onClose={() => setResetting(null)} />}
       {list.error ? (
         <ErrorBox error={list.error} onRetry={list.reload} />
       ) : list.loading ? (
@@ -33,7 +35,7 @@ export default function PeoplePage() {
           <table className="w-full min-w-[820px]">
             <thead className="border-b border-line bg-canvas/60">
               <tr>
-                {["ID", "Name", "Branch", "Department", "Designation", "Manager", "Status", "Joined"].map((h) => <th key={h} className="table-head">{h}</th>)}
+                {["ID", "Name", "Branch", "Department", "Designation", "Manager", "Status", "Joined", ...(canAdd ? [""] : [])].map((h, i) => <th key={h || i} className="table-head">{h}</th>)}
               </tr>
             </thead>
             <tbody className="divide-y divide-line">
@@ -50,6 +52,11 @@ export default function PeoplePage() {
                     {e.account_status !== "active" && <span className="chip ml-1 bg-amber-50 capitalize text-amber-800">{e.account_status}</span>}
                   </td>
                   <td className="table-cell text-ink-muted">{formatDate(e.joining_date)}</td>
+                  {canAdd && (
+                    <td className="table-cell text-right">
+                      <button className="btn-secondary whitespace-nowrap text-xs" onClick={() => setResetting(e)}>Reset access</button>
+                    </td>
+                  )}
                 </tr>
               ))}
             </tbody>
@@ -159,6 +166,55 @@ function AddEmployee({ onClose, onSaved }: { onClose: () => void; onSaved: () =>
           <button className="btn-primary" disabled={busy}>{busy ? "Creating…" : "Create and invite"}</button>
         </div>
       </form>
+    </div>
+  );
+}
+
+function ResetAccess({ emp, onClose }: { emp: Emp; onClose: () => void }) {
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [link, setLink] = useState<{ url: string; mode: string } | null>(null);
+
+  async function confirm() {
+    setBusy(true);
+    setError(null);
+    try {
+      const r = await api<{ resetUrl: string; mailMode: string }>(`/employees/${emp.id}/reset-access`, { method: "POST" });
+      setLink({ url: r.resetUrl, mode: r.mailMode });
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "Could not reset access");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-start justify-center bg-ink/30 p-4" role="dialog" aria-modal aria-labelledby="reset-access">
+      <div className="card mt-16 w-full max-w-lg space-y-3 p-6">
+        <h2 id="reset-access" className="text-lg font-semibold">Reset access for {emp.full_name}</h2>
+        {link ? (
+          <>
+            <p className="text-sm text-ink-muted">
+              {link.mode === "smtp"
+                ? "A reset email has been sent."
+                : "Email delivery is in TEST MODE, so no email was sent. Share this one-time link with the employee securely; it expires in 24 hours."}
+            </p>
+            <input readOnly aria-label="Reset link" className="input font-mono text-xs" value={link.url} onFocus={(e) => e.target.select()} />
+            <div className="flex justify-end"><button className="btn-primary" onClick={onClose}>Done</button></div>
+          </>
+        ) : (
+          <>
+            <p className="text-sm text-ink-muted">
+              This signs {emp.full_name} out everywhere, turns off their two-factor sign-in, and gives you a new one-time link to choose a password. Use it when someone forgot their password, lost their phone, or their invitation expired.
+            </p>
+            {error && <p role="alert" className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-800">{error}</p>}
+            <div className="flex justify-end gap-2">
+              <button className="btn-secondary" onClick={onClose} disabled={busy}>Cancel</button>
+              <button className="btn-primary" onClick={confirm} disabled={busy}>{busy ? "Resetting…" : "Reset access"}</button>
+            </div>
+          </>
+        )}
+      </div>
     </div>
   );
 }

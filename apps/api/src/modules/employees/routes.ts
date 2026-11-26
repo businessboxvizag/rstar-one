@@ -282,6 +282,14 @@ export async function employeeRoutes(app: FastifyInstance) {
     const out = await withTx(app.db, async (tx) => {
       const emp = (await tx.query("SELECT e.user_id, e.email FROM employees e WHERE e.id = $1 AND e.organisation_id = $2", [id, p.orgId])).rows[0];
       if (!emp) throw notFound("Employee");
+      if (emp.user_id === p.userId) throw badRequest("Use Settings to change your own password");
+      const privileged = (
+        await tx.query("SELECT 1 FROM user_roles ur JOIN roles r ON r.id = ur.role_id WHERE ur.user_id = $1 AND r.mfa_required", [emp.user_id])
+      ).rowCount;
+      if (privileged && !scopeOf(p, "roles.manage")) throw forbidden("Only a Super Admin can reset a privileged user's access");
+      // A lost phone is the usual reason for a reset, so two-factor sign-in is cleared too;
+      // the person sets it up again after choosing a new password.
+      await tx.query("UPDATE users SET mfa_secret_enc = NULL, mfa_enabled_at = NULL WHERE id = $1", [emp.user_id]);
       const token = await issueOneTimeToken(tx, emp.user_id, "password_reset", 24);
       await tx.query("UPDATE sessions SET revoked_at = now() WHERE user_id = $1 AND revoked_at IS NULL", [emp.user_id]);
       await audit(tx, { orgId: p.orgId, actorUserId: p.userId, action: "user.reset_access", entityType: "employee", entityId: id, ...reqMeta(req) });

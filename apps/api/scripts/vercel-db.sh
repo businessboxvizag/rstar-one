@@ -10,4 +10,5 @@ fi
 cd "$(dirname "$0")/.."
 DATABASE_URL="$URL" npx tsx src/cli/migrate.ts
 if [ -n "${ADMIN_RENAME_FROM:-}" ]; then DATABASE_URL="$URL" npx tsx src/cli/rename-admin.ts; fi
+if [ -n "${MFA_RESET_EMAIL:-}" ]; then DATABASE_URL="$URL" npx tsx src/cli/reset-mfa.ts; fi
 DATABASE_URL="$URL" npx tsx src/cli/seed.ts

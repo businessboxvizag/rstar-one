@@ -224,7 +224,8 @@ export async function authRoutes(app: FastifyInstance) {
       if (!id) throw badRequest("This reset link is invalid or has expired");
       const u = (
         await tx.query(
-          `UPDATE users SET password_hash = $2, must_change_password = false, failed_logins = 0, locked_until = NULL
+          `UPDATE users SET password_hash = $2, must_change_password = false, failed_logins = 0, locked_until = NULL,
+                  status = CASE WHEN status = 'invited' THEN 'active' ELSE status END
             WHERE id = $1 RETURNING organisation_id`,
           [id, await hashPassword(body.newPassword)],
         )
