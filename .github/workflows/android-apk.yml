@@ -1,0 +1,60 @@
+name: Android test APK
+
+# Builds an installable test APK of the RSTAR ONE mobile app pointed at staging.
+# Signed with the Android debug key: fine for sideloading, not for the Play Store
+# (store builds will use EAS with a managed upload key).
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "apps/mobile/**"
+      - "packages/shared/**"
+      - ".github/workflows/android-apk.yml"
+
+concurrency:
+  group: android-apk
+  cancel-in-progress: true
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      API_URL: https://rstar-one-api.vercel.app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+      # React Native's Gradle autolinking is most reliable with a hoisted node_modules.
+      - run: pnpm install --frozen-lockfile --config.node-linker=hoisted
+      - run: pnpm --filter @rstar/shared build
+      - name: Point the app at staging
+        working-directory: apps/mobile
+        run: |
+          jq --arg u "$API_URL" '.expo.extra.apiUrl = $u' app.json > app.tmp.json && mv app.tmp.json app.json
+          jq '.expo.extra' app.json
+      - name: Generate native Android project
+        working-directory: apps/mobile
+        run: npx expo prebuild --platform android --no-install --clean
+      - uses: gradle/actions/setup-gradle@v4
+      - name: Build release APK
+        working-directory: apps/mobile/android
+        run: ./gradlew assembleRelease --no-daemon
+      - name: Name the APK
+        run: |
+          mkdir -p out
+          cp apps/mobile/android/app/build/outputs/apk/release/app-release.apk "out/rstar-one-staging-${GITHUB_SHA::7}.apk"
+          ls -la out
+      - uses: actions/upload-artifact@v4
+        with:
+          name: rstar-one-android-apk
+          path: out/*.apk
+          retention-days: 30
