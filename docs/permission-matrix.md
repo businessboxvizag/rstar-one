@@ -4,7 +4,7 @@ _Generated from `packages/shared/src/permissions.ts` by `pnpm --filter @rstar/sh
 
 Scopes: **Own** = records the person owns or is assigned to · **Team** = plus direct reports · **Dept** = their department (all branches) · **Branch** = their branch · **All** = whole organisation. A wider scope includes the narrower ones. Blank = no access. ⚠ = sensitive (always audited; withheld until MFA is set up for privileged roles).
 
-Every staff role also receives the base self-service grants: `employees.read`, `attendance.self`, `attendance.read`, `attendance.approve`, `leave.self`, `leave.read`, `leave.approve`, `payroll.self`, `projects.read`, `tasks.self`, `content.read`, `media.read`, `assets.read`.
+Every staff role also receives the base self-service grants: `employees.read`, `attendance.self`, `attendance.read`, `attendance.approve`, `leave.self`, `leave.read`, `leave.approve`, `payroll.self`, `projects.read`, `tasks.self`, `tasks.manage`, `content.read`, `media.read`, `assets.read`.
 
 ## Roles
 
@@ -65,7 +65,7 @@ HR Admin can create accounts and assign non-privileged roles. Only holders of `r
 | `projects.read`<br><sub>View projects</sub> | All | All | Branch | Dept | Own | Own | All | Own | Own | Own | Own | Own | Own | Own |  |
 | `projects.manage`<br><sub>Create projects and manage membership</sub> | All | All | Branch | Dept |  |  | All |  |  |  |  |  |  |  |  |
 | `tasks.self`<br><sub>Work on tasks assigned to oneself</sub> | All | Own | Own | Own | Own | Own | Own | Own | Own | Own | Own | Own | Own | Own |  |
-| `tasks.manage`<br><sub>Create, assign and re-prioritise tasks</sub> | All | All | Branch | Dept |  |  | All |  |  |  |  |  |  |  |  |
+| `tasks.manage`<br><sub>Create, assign and re-prioritise tasks</sub> | All | All | Branch | Dept | Team | Team | All | Team | Team | Team | Team | Team | Team | Team |  |
 | **Production** | | | | | | | | | | | | | | | |
 | `content.read`<br><sub>View content items and their history</sub> | All | All | Branch | Dept | Own | Own | All | Own | Own | Own | Own | All | Own | Own | Own |
 | `content.create`<br><sub>Create content items (allocates a Content ID)</sub> | All | All | Branch |  |  |  | All |  |  |  |  |  |  |  |  |

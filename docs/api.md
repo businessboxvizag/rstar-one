@@ -115,3 +115,18 @@ Every reporting manager can review their direct reports' attendance and leave (`
 **Social and analytics (M7)** `POST /content/:id/posts` · `POST /posts/:id/published` `{ url, externalId, publishedAt }` · `POST /posts/:id/snapshots` `{ window, source: manual, metrics }` · `POST /analytics/import.csv` · `GET /analytics/reports` · `GET/POST /platform-accounts` (OAuth start/callback)
 
 **CRM, sales, finance, assets, reports (M7–M9)** Standard CRUD under `/contacts`, `/leads`, `/proposals`, `/invoices`, `/payments`, `/bills`, `/expenses`, `/purchase-requests`, `/vendors`, `/accounts`, `/assets`; `GET /reports/:report?from=&to=&format=json|csv|xlsx`.
+
+## Tasks
+
+All under `/v1`, staff only. Everyone can create tasks for themselves; `tasks.manage` (base grant: `team`, i.e. direct reports; wider for department/branch heads and admins) allows assigning to others in scope. Tasks outside your scope return 404.
+
+| Method | Path | Notes |
+|---|---|---|
+| GET | `/tasks/assignees` | People you can assign to (you first) |
+| GET | `/tasks/summary` | Your open / due today / overdue counts |
+| GET | `/tasks?view=mine\|created\|team&status=active\|done\|cancelled\|all&overdue=true&q=` | `q` matches title or `T-123` |
+| POST | `/tasks` | `{title, description?, assigneeEmployeeId?, priority, dueDate?, contentCode?}` → notifies assignee |
+| GET | `/tasks/:id` | Includes `comments`, append-only `history`, and `can` (work/manage) |
+| PATCH | `/tasks/:id` | Creator/manager only; `expectedVersion` required; reassign notifies both people |
+| POST | `/tasks/:id/status` | `{status, note?, expectedVersion}`; blocked/cancelled need a note; assignee can start/block/finish/reopen, only creator/manager can cancel |
+| POST | `/tasks/:id/comments` | Notifies assignee and creator |

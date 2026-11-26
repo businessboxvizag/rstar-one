@@ -17,6 +17,7 @@ interface NavItem {
 // Only modules that exist are listed; more appear as each milestone lands.
 const NAV: NavItem[] = [
   { href: "/dashboard", label: "Dashboard", icon: "M3 12l9-9 9 9M5 10v10h14V10" },
+  { href: "/tasks", label: "Tasks", perm: "tasks.self", icon: "M9 11l3 3 8-8M20 12v7a1 1 0 01-1 1H5a1 1 0 01-1-1V5a1 1 0 011-1h11" },
   { href: "/attendance", label: "Attendance", perm: "attendance.self", icon: "M12 21s-7-6.2-7-11a7 7 0 1114 0c0 4.8-7 11-7 11zM12 12.5a2.5 2.5 0 100-5 2.5 2.5 0 000 5" },
   { href: "/attendance/team", label: "Team attendance", perm: "attendance.approve", icon: "M17 20h5v-1a4 4 0 00-5-3.9M9 20H2v-1a4 4 0 017-2.6M12 7a3 3 0 11-6 0 3 3 0 016 0zM20 8a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0" },
   { href: "/leave", label: "Leave", perm: "leave.self", icon: "M8 3v3M16 3v3M4 8h16M5 5h14a1 1 0 011 1v14H4V6a1 1 0 011-1zM9 14l2 2 4-4" },

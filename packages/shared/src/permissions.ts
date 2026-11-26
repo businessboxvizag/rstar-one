@@ -146,6 +146,8 @@ export const EMPLOYEE_BASE: Grants = {
   "payroll.self": "own",
   "projects.read": "own",
   "tasks.self": "own",
+  // Assign tasks to oneself and one's direct reports.
+  "tasks.manage": "team",
   "content.read": "own",
   "media.read": "own",
   "assets.read": "own",

@@ -7,7 +7,8 @@ import { EmptyState, ErrorBox, Loading, PageHeader, StageChip, formatDate, useAp
 
 interface Pipeline { items: { stage: ContentStage; count: number; overdue: number }[] }
 interface ContentList { items: { id: string; content_code: string; title: string; stage: ContentStage; stage_due_at: string | null; client_name: string | null; channel_name: string | null }[] }
-interface Notes { items: { id: string; title: string; body: string; created_at: string; read_at: string | null }[]; unread: number }
+interface Notes { items: { id: string; title: string; body: string; created_at: string; read_at: string | null; entity_type: string | null; entity_id: string | null }[]; unread: number }
+interface TaskSummary { open: number; overdue: number; dueToday: number }
 
 const PHASES: { key: StagePhase; label: string }[] = [
   { key: "planning", label: "Ideas" },
@@ -25,6 +26,7 @@ export default function DashboardPage() {
   const pipeline = useApi<Pipeline>(can("content.read") ? "/content-pipeline" : null);
   const mine = useApi<ContentList>(can("content.read") ? "/content?mine=true&limit=8" : null);
   const notes = useApi<Notes>("/notifications?limit=6");
+  const tasks = useApi<TaskSummary>(can("tasks.self") ? "/tasks/summary" : null);
 
   const byPhase = new Map<StagePhase, { count: number; overdue: number }>();
   for (const r of pipeline.data?.items ?? []) {
@@ -37,6 +39,17 @@ export default function DashboardPage() {
   return (
     <>
       <PageHeader title={`Welcome, ${me?.user.displayName.split(" ")[0] ?? ""}`} subtitle="Live figures from the RSTAR ONE database. Attendance, leave, payroll and finance tiles arrive with their modules." />
+
+      {tasks.data && (
+        <section aria-labelledby="mytasks" className="mb-6">
+          <h2 id="mytasks" className="mb-3 text-sm font-semibold uppercase tracking-wide text-ink-muted">My tasks</h2>
+          <div className="grid grid-cols-3 gap-3 sm:max-w-xl">
+            <Link href="/tasks" className="card p-4 hover:bg-canvas"><div className="text-xs text-ink-muted">Open</div><div className="mt-1 text-2xl font-semibold tabular-nums">{tasks.data.open}</div></Link>
+            <Link href="/tasks" className="card p-4 hover:bg-canvas"><div className="text-xs text-ink-muted">Due today</div><div className="mt-1 text-2xl font-semibold tabular-nums">{tasks.data.dueToday}</div></Link>
+            <Link href="/tasks" className="card p-4 hover:bg-canvas"><div className="text-xs text-ink-muted">Overdue</div><div className={`mt-1 text-2xl font-semibold tabular-nums ${tasks.data.overdue ? "text-red-700" : ""}`}>{tasks.data.overdue}</div></Link>
+          </div>
+        </section>
+      )}
 
       {can("content.read") && (
         <section aria-labelledby="pipeline" className="mb-6">
@@ -105,7 +118,11 @@ export default function DashboardPage() {
             <ul className="card divide-y divide-line">
               {notes.data.items.map((n) => (
                 <li key={n.id} className="px-4 py-3">
-                  <div className={`text-sm ${n.read_at ? "" : "font-semibold"}`}>{n.title}</div>
+                  {n.entity_type === "task" && n.entity_id ? (
+                    <Link href={`/tasks/${n.entity_id}`} className={`text-sm hover:underline ${n.read_at ? "" : "font-semibold"}`}>{n.title}</Link>
+                  ) : (
+                    <div className={`text-sm ${n.read_at ? "" : "font-semibold"}`}>{n.title}</div>
+                  )}
                   <div className="truncate text-xs text-ink-muted">{n.body}</div>
                   <div className="mt-0.5 text-[11px] text-ink-faint">{formatDate(n.created_at, true)}</div>
                 </li>
