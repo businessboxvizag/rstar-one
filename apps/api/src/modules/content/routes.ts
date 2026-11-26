@@ -4,6 +4,7 @@ import {
   CONTENT_STAGES,
   CommentInput,
   CreateContentInput,
+  OWNER_ROLE_PERMISSION,
   Pagination,
   STAGE_LABELS,
   TransitionInput,
@@ -167,6 +168,31 @@ export async function contentRoutes(app: FastifyInstance) {
       return m;
     });
     return reply.status(201).send(r);
+  });
+
+  /**
+   * People who can be assigned a stage role (e.g. editors for "Assign editor").
+   * Only names and job details are returned, so producers can assign work without employee-directory access.
+   */
+  app.get("/assignees", async (req) => {
+    const p = req.principal;
+    const assigners = ["content.assign", "edit.assign", "shoot.schedule", "script.approve", "content.final_approve", "review.internal"] as const;
+    if (p.kind !== "staff" || !assigners.some((k) => scopeOf(p, k))) throw forbidden();
+    const { role } = parse(z.object({ role: z.enum(Object.keys(OWNER_ROLE_PERMISSION) as [keyof typeof OWNER_ROLE_PERMISSION]) }), req.query);
+    const r = await app.db.query(
+      `SELECT DISTINCT u.id AS user_id, u.display_name AS full_name, g.name AS designation_name, d.name AS department_name, b.name AS branch_name
+         FROM users u
+         JOIN employees e ON e.user_id = u.id AND e.status IN ('onboarding','probation','active','notice')
+         JOIN departments d ON d.id = e.department_id
+         JOIN branches b ON b.id = e.branch_id
+         LEFT JOIN designations g ON g.id = e.designation_id
+         JOIN user_roles ur ON ur.user_id = u.id
+         JOIN role_permissions rp ON rp.role_id = ur.role_id AND rp.permission_key = $2
+        WHERE u.organisation_id = $1 AND u.status = 'active' AND u.kind = 'staff'
+        ORDER BY full_name`,
+      [p.orgId, OWNER_ROLE_PERMISSION[role]],
+    );
+    return { items: r.rows };
   });
 
   /** Per-stage counts for the production pipeline board. */

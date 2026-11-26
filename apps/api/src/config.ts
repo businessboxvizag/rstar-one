@@ -18,6 +18,8 @@ const Env = z.object({
   APP_BASE_URL: z.string().url().default("http://localhost:3000"),
   LOG_LEVEL: z.string().default("info"),
   LOGIN_RATE_LIMIT_PER_MINUTE: z.coerce.number().int().min(1).default(10),
+  /** Which proxies may set X-Forwarded-For (Fastify trustProxy syntax). Never "true" on a public port. */
+  TRUST_PROXY: z.string().default("loopback,linklocal,uniquelocal"),
 });
 
 export type Config = z.infer<typeof Env>;

@@ -42,7 +42,7 @@ export function reqMeta(req: FastifyRequest) {
 export async function buildApp(config: Config, opts: { db?: Db; logger?: boolean } = {}): Promise<FastifyInstance> {
   const app = Fastify({
     logger: opts.logger === false ? false : { level: config.LOG_LEVEL, redact: ["req.headers.authorization", "req.headers.cookie"] },
-    trustProxy: true,
+    trustProxy: config.TRUST_PROXY,
     bodyLimit: 1024 * 1024, // JSON only; media never passes through the API (signed URLs)
   });
 

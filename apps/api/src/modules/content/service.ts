@@ -1,4 +1,5 @@
 import {
+  OWNER_ROLE_PERMISSION,
   STAGE_LABELS,
   findTransition,
   formatContentId,
@@ -117,13 +118,6 @@ const OWNER_FIELD: Record<NonNullable<Transition["ownerRole"]>, keyof ContentRow
   producer: "producer_id",
 };
 
-const OWNER_PERMISSION: Record<NonNullable<Transition["ownerRole"]>, PermissionKey> = {
-  script_writer: "script.write",
-  camera_operator: "footage.upload",
-  editor: "edit.work",
-  publisher: "publish.manage",
-  producer: "content.assign",
-};
 
 /** Transitions the principal may perform now on this item (for UI action buttons). */
 export function availableTransitions(p: Principal, c: ContentRow): Transition[] {
@@ -177,8 +171,8 @@ export async function transition(
   if (t.ownerRole) {
     const field = OWNER_FIELD[t.ownerRole];
     if (input.assigneeUserId) {
-      if (!(await userHasPermission(tx, input.assigneeUserId, p.orgId, OWNER_PERMISSION[t.ownerRole]))) {
-        throw badRequest(`The selected person cannot take this work (needs ${OWNER_PERMISSION[t.ownerRole]})`);
+      if (!(await userHasPermission(tx, input.assigneeUserId, p.orgId, OWNER_ROLE_PERMISSION[t.ownerRole]))) {
+        throw badRequest(`The selected person cannot take this work (needs ${OWNER_ROLE_PERMISSION[t.ownerRole]})`);
       }
       set(String(field), input.assigneeUserId);
       newOwner = input.assigneeUserId;

@@ -169,4 +169,14 @@ describe("media production lifecycle", () => {
     const comments = (await portal.get(`/v1/content/${c.id}/comments`)).json().items.map((x: { body: string }) => x.body);
     expect(comments).toEqual(["thanks!"]);
   });
+  it("lists assignable people by role without exposing the employee directory", async () => {
+    const { producer, editor, writer } = people;
+    const r = (await producer!.api.get("/v1/assignees?role=editor")).json();
+    const ids = r.items.map((x: { user_id: string }) => x.user_id);
+    expect(ids).toContain(editor!.userId);
+    expect(ids).not.toContain(writer!.userId);
+    expect(Object.keys(r.items[0]).sort()).toEqual(["branch_name", "department_name", "designation_name", "full_name", "user_id"]);
+    expect((await editor!.api.get("/v1/assignees?role=editor")).statusCode).toBe(403);
+  });
 });
+

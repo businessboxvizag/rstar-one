@@ -195,3 +195,12 @@ export function nextStages(from: ContentStage): Transition[] {
 }
 
 export const TERMINAL_STAGES: ReadonlySet<ContentStage> = new Set(["archived", "cancelled"]);
+
+/** Permission a person must hold to be assigned as each stage owner. */
+export const OWNER_ROLE_PERMISSION: Record<NonNullable<Transition["ownerRole"]>, PermissionKey> = {
+  script_writer: "script.write",
+  camera_operator: "footage.upload",
+  editor: "edit.work",
+  publisher: "publish.manage",
+  producer: "content.assign",
+};
