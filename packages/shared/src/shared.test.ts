@@ -102,3 +102,15 @@ describe("geo", () => {
     expect(d).toBeLessThan(4000);
   });
 });
+
+import { forecast, cumulativeCost, DEFAULT_PRICES } from "./storage-cost.js";
+describe("storage cost model", () => {
+  it("tiers raw footage after the hot window and backs up hot data", () => {
+    const rows = forecast({ intakeTbPerMonth: 4, months: 12, hotDays: 90, derivedRatio: 0.08, backupScope: "hot", prices: DEFAULT_PRICES });
+    const m12 = rows[11]!;
+    expect(m12.hotTb).toBeCloseTo(12 + 48 * 0.08);
+    expect(m12.archiveTb).toBe(36);
+    expect(m12.costUsd).toBeCloseTo(15.84 * 15 + 36 * 6 + 15.84 * 6, 1);
+    expect(cumulativeCost(rows)).toBeGreaterThan(m12.costUsd);
+  });
+});
