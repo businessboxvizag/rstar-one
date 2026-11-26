@@ -19,7 +19,11 @@ const Env = z.object({
   LOG_LEVEL: z.string().default("info"),
   LOGIN_RATE_LIMIT_PER_MINUTE: z.coerce.number().int().min(1).default(10),
   /** Which proxies may set X-Forwarded-For (Fastify trustProxy syntax). Never "true" on a public port. */
-  TRUST_PROXY: z.string().default("loopback,linklocal,uniquelocal"),
+  // "true" behind a platform proxy that always sets X-Forwarded-For (e.g. Vercel); a hop count; or an IP/CIDR list.
+  TRUST_PROXY: z
+    .string()
+    .default("loopback,linklocal,uniquelocal")
+    .transform((v): boolean | number | string => (v === "true" ? true : v === "false" ? false : /^\d+$/.test(v) ? Number(v) : v)),
 });
 
 export type Config = z.infer<typeof Env>;
