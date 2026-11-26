@@ -31,9 +31,9 @@ export async function restoreSession(): Promise<boolean> {
   const rt = await SecureStore.getItemAsync(RT_KEY);
   if (!rt) return false;
   try {
-    const r = await raw<{ accessToken: string; refreshToken: string }>("/auth/refresh", { body: { refreshToken: rt }, auth: false });
+    const r = await raw<{ accessToken: string; refreshToken: string | null }>("/auth/refresh", { body: { refreshToken: rt }, auth: false });
     accessToken = r.accessToken;
-    await SecureStore.setItemAsync(RT_KEY, r.refreshToken);
+    if (r.refreshToken) await SecureStore.setItemAsync(RT_KEY, r.refreshToken);
     return true;
   } catch {
     await SecureStore.deleteItemAsync(RT_KEY);

@@ -8,11 +8,11 @@
 | Client portal user sees internal or other-client data | Separate `kind=client` identity; client roles cannot hold staff permissions (enforced at load); responses trimmed to client-safe fields; internal comments hidden | ✅ |
 | Privilege escalation by HR or a compromised account | Only `roles.manage` can grant MFA-required roles; nobody can change their own roles; Super Admin role cannot be reduced; all role changes audited | ✅ |
 | Credential stuffing / brute force | scrypt hashes, lockout after 5 failures, per IP+email rate limits, generic error messages, no account enumeration on reset | ✅ |
-| Stolen session | 15-minute access tokens; refresh rotation; per-device revocation; deactivation and password reset revoke all sessions immediately | ✅ |
+| Stolen session | 15-minute access tokens; refresh rotation (a just-rotated token is honoured for 20 s for concurrent tabs, reuse after that revokes the session); per-device revocation; deactivation and password reset revoke all sessions immediately | ✅ |
 | Privileged account takeover | TOTP MFA; with enforcement on, sensitive permissions are withheld until MFA is enrolled | ✅ |
 | Tampering with history | Audit log and content history are append-only at the database level; content items cannot be deleted | ✅ |
 | Leaking secrets | No secrets in client apps; `.env` never committed; passwords/tokens redacted from audit; bank/PAN/UAN and MFA secrets encrypted with AES-256-GCM | ✅ |
-| Spoofed GPS | Server-side geofence and accuracy checks; mock-location and anomaly flags; never auto-trust client coordinates | 🗓 M2 |
+| Spoofed GPS | Server re-evaluates every check (geofence distance, reported accuracy, Android mock-location flag, impossible travel, client clock skew); server time only; anything unusual becomes a pending exception for a manager, never auto-verified; attendance events cannot be deleted. A rooted device can still fake coordinates convincingly, which is why exceptions and patterns are reviewed by people | ✅ M2 |
 | Unauthorised file access | Short-lived signed URLs only, download logging, no public buckets | 🗓 M6 |
 | Web vulnerabilities | Parameterised SQL only; Zod validation on every input; helmet headers; CORS allow-list; JSON body limit 1 MB | ✅ (CSP tuned in web app) |
 | Data loss | PITR + independent backups + quarterly restore drill | 🗓 M6/M10 |

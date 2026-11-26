@@ -17,6 +17,7 @@ export async function POST(req: NextRequest) {
     return res;
   }
   const res = NextResponse.json({ accessToken: j.accessToken, expiresIn: j.expiresIn });
-  res.cookies.set(SESSION_COOKIE, j.refreshToken, cookieOptions(60 * 60 * 24 * 30));
+  // null = the API served a concurrent refresh from its grace window; keep the cookie set by the other one.
+  if (j.refreshToken) res.cookies.set(SESSION_COOKIE, j.refreshToken, cookieOptions(60 * 60 * 24 * 30));
   return res;
 }

@@ -21,6 +21,8 @@ export function setAccessToken(t: string | null) {
   accessToken = t;
 }
 
+export const hasAccessToken = () => accessToken !== null;
+
 export async function refreshSession(): Promise<boolean> {
   refreshing ??= (async () => {
     try {

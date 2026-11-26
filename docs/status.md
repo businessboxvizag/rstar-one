@@ -1,6 +1,6 @@
 # Milestone status
 
-_Updated 26 Nov 2026 — end of Milestone 1._
+_Updated 26 Nov 2026 — end of Milestone 2 (attendance and leave)._
 
 ## Implemented and tested
 
@@ -18,6 +18,11 @@ _Updated 26 Nov 2026 — end of Milestone 1._
 | Audit | Append-only, redacted, readable only with `audit.read` | `audit.test.ts` (4 tests) |
 | Web app | Login (with MFA step), collapsible sidebar + mobile drawer, global Content ID search, dashboard (live pipeline counts, my work, notifications), production list/filters/create, content detail with workflow actions, assignment, history, comments, people directory + add employee/invite, audit log, security settings (password, MFA QR, sessions) | Production build passes; browser run-through on a seeded database (login → create CC001 → assign script → audit) with no console errors |
 | Mobile app | Expo app: secure sign-in with MFA, refresh token in OS keychain, profile, My work list | Typecheck passes; Android bundle exports. **Not yet run on a device/simulator.** |
+| **M2 Attendance** | Migration 0003. GPS check-in/out with server-side verdicts (geofence distance, accuracy, mock location, impossible travel, clock skew), office / field / WFH modes by policy, versioned location consent, idempotent submits, night-shoot check-out, daily ledger (present / late / half day / absent / leave / holiday / weekly off / needs review) rebuilt from events + corrections + leave + holidays, exception review, correction requests and manual entries, register by scope, geofence + working-hours + holiday setup | 12 rule unit tests, `attendance.test.ts` (8 tests), browser run-through (set geofence from location → consent → verified check-in → register) |
+| **M2 Leave** | Leave types (seeded CL/SL/EL/LOP defaults, editable), monthly/yearly accrual with joining pro-rating, balances, apply with half days, holiday/weekly-off exclusion, overlap and balance checks, document threshold, manager approval with optimistic locking, withdraw/cancel with balance restore, HR adjustments, year-end carry forward, ledger integration | `leave.test.ts` (5 tests) |
+| Web (M2) | My attendance (check in/out with browser GPS, consent notice, month ledger, corrections), Team attendance (review queue with map link, daily register), Leave (balances, apply, my requests, approvals), Attendance setup (geofences with "use my location", rules, holidays, leave types) | Production build; browser run-through; no horizontal scroll at 390 px |
+| Mobile (M2) | Check in/out card with foreground-only GPS (`expo-location`), consent prompt, Android mock-location flag, mode picker | Typecheck; Android bundle exports. **Not yet run on a device.** |
+| Fixes found in M2 | Web could not send PUT/PATCH/DELETE (CORS default only allowed GET/POST), now fixed and tested. Two refreshes at once (two tabs, or right after sign-in) logged the user out; refresh tokens now have a 20-second grace window, and reuse after it revokes the session | `auth.test.ts` |
 | Docs | Architecture + ADRs, data model, permission matrix (generated), API contracts, workflows, storage + cost model, security + location policy, deployment | `docs/` |
 
 ## Needs external accounts or credentials (test mode until then)
@@ -33,9 +38,15 @@ _Updated 26 Nov 2026 — end of Milestone 1._
 
 ## Not yet built (next milestones)
 
-Attendance and GPS, leave, payroll, projects and tasks, script editor and shoot management, media upload and library, social publishing and analytics, CRM detail, sales, finance, assets, reports and exports, client-user provisioning UI, organisation settings UI, push/email notification delivery, backups and restore tests, end-to-end browser test suite in CI, mobile device tests.
+Payroll (M3, uses the attendance ledger and unpaid leave), projects and tasks, script editor and shoot management, media upload and library, social publishing and analytics, CRM detail, sales, finance, assets, reports and exports, client-user provisioning UI, organisation settings UI, push/email notification delivery, backups and restore tests, end-to-end browser test suite in CI, mobile device tests.
 
 ## Known limitations
+
+* Office geofences are **not** pre-filled: an admin must set each branch from the real office location (Attendance setup → "Use my current location" while standing in the office). Until then, office check-ins go to review.
+* Seeded leave quotas (CL 12 monthly, SL 12 yearly with document after 2 days, EL 15 monthly with 30 carry-forward, LOP unlimited) are common Indian defaults, not your HR policy. Please confirm or change them.
+* Leave approval is one level (reporting manager, or anyone above with approve scope). A second HR step can be added if you want it.
+* Leave documents are a text reference until file upload lands (M6). Push notifications for approvals arrive with the notification milestone; in-app notifications work now.
+* GPS cannot defeat a rooted phone that fakes coordinates perfectly; the flags and manager review are the control.
 
 * Login assumes one organisation per email address (true for this deployment).
 * The client portal currently uses the same web app; client users are created directly in the database until the CRM milestone adds the UI.

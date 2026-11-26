@@ -137,9 +137,12 @@ export interface RoleDef {
 export const EMPLOYEE_BASE: Grants = {
   "employees.read": "own",
   "attendance.self": "own",
-  "attendance.read": "own",
+  // "team" = oneself plus one's direct reports, so a reporting manager can review their team.
+  "attendance.read": "team",
+  "attendance.approve": "team",
   "leave.self": "own",
-  "leave.read": "own",
+  "leave.read": "team",
+  "leave.approve": "team",
   "payroll.self": "own",
   "projects.read": "own",
   "tasks.self": "own",

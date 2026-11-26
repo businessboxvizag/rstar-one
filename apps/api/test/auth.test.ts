@@ -46,10 +46,19 @@ describe("authentication", () => {
     const t = await login(ctx.app, ADMIN.email, ADMIN.password);
     const r1 = await ctx.app.inject({ method: "POST", url: "/v1/auth/refresh", payload: { refreshToken: t.refreshToken } });
     expect(r1.statusCode).toBe(200);
-    // The old refresh token is no longer valid after rotation.
+    // Within the grace window (two tabs refreshing together) the old token gives an access token only.
     const again = await ctx.app.inject({ method: "POST", url: "/v1/auth/refresh", payload: { refreshToken: t.refreshToken } });
-    expect(again.statusCode).toBe(401);
-    const api = client(ctx.app, r1.json().accessToken);
+    expect(again.statusCode).toBe(200);
+    expect(again.json().refreshToken).toBeNull();
+    // After the window, reuse of the old token is treated as theft: 401 and the session is revoked.
+    await ctx.db.query("UPDATE sessions SET rotated_at = now() - interval '5 minutes' WHERE id = $1", [r1.json().sessionId]);
+    const late = await ctx.app.inject({ method: "POST", url: "/v1/auth/refresh", payload: { refreshToken: t.refreshToken } });
+    expect(late.statusCode).toBe(401);
+    const current = await ctx.app.inject({ method: "POST", url: "/v1/auth/refresh", payload: { refreshToken: r1.json().refreshToken } });
+    expect(current.statusCode).toBe(401);
+
+    const t2 = await login(ctx.app, ADMIN.email, ADMIN.password);
+    const api = client(ctx.app, t2.accessToken);
     expect((await api.post("/v1/auth/logout")).statusCode).toBe(200);
     expect((await api.get("/v1/me")).statusCode).toBe(401);
   });
@@ -137,5 +146,18 @@ describe("MFA enforcement for privileged roles", () => {
     const setup = (await api.post("/v1/auth/mfa/setup")).json();
     await api.post("/v1/auth/mfa/confirm", { totp: totpNow(setup.secret) });
     expect((await api.get("/v1/audit")).statusCode).toBe(200);
+  });
+});
+
+describe("CORS", () => {
+  it("allows the web origin to use every method the web app calls", async () => {
+    const ctx2 = await setupApp({ CORS_ORIGINS: "https://one.example" });
+    for (const m of ["PUT", "PATCH", "DELETE"]) {
+      const r = await ctx2.app.inject({ method: "OPTIONS", url: "/v1/leave/types/x", headers: { origin: "https://one.example", "access-control-request-method": m } });
+      expect(r.headers["access-control-allow-methods"]).toContain(m);
+    }
+    const bad = await ctx2.app.inject({ method: "OPTIONS", url: "/v1/leave/types/x", headers: { origin: "https://evil.example", "access-control-request-method": "PUT" } });
+    expect(bad.headers["access-control-allow-origin"]).toBeUndefined();
+    await teardown(ctx2);
   });
 });

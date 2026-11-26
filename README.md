@@ -5,7 +5,7 @@
 The organisation operating system for **RSTAR TV** — people, attendance, payroll, media production, storage, publishing, clients and finance across Visakhapatnam and Hyderabad.
 _Technology & Operations by BusinessBOX._
 
-> Status: **Milestone 1 (foundation)**. See [docs/status.md](docs/status.md) for exactly what is implemented, tested, and waiting on credentials.
+> Status: **Milestone 2 (attendance with GPS, leave)**. See [docs/status.md](docs/status.md) for exactly what is implemented, tested, and waiting on credentials.
 
 ## Repository
 

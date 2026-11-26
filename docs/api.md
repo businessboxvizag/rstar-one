@@ -67,12 +67,42 @@ Base URL: `/v1`. JSON only. Auth: `Authorization: Bearer <accessToken>`. ✅ = i
 | `GET /content-pipeline` | `content.read` | Per-stage counts and overdue counts for the dashboard |
 | `GET /notifications`, `POST /notifications/:id/read`, `POST /notifications/read-all` | self | In-app notifications |
 
+## Attendance ✅ (M2)
+
+| Method | Path | Who | Notes |
+|---|---|---|---|
+| POST | `/attendance/consent` | self | Accepts the location notice (versioned, audited). Required before any GPS check. |
+| GET | `/attendance/me/today` | self | Today's events, ledger row, open session (incl. night shoots past midnight), office geofence status, policy, consent. |
+| POST | `/attendance/events` | `attendance.self` | `{ kind: check_in\|check_out, mode: office\|field\|wfh, latitude?, longitude?, accuracyM?, mocked?, clientTime?, note?, deviceId?, idempotencyKey? }` → event with `result` (`verified`, `remote`, `pending_exception`) and `flags[]`. The server decides the result; time is server time. Same `idempotencyKey` replays the first result (200). |
+| GET | `/attendance/me?from&to` | self | Daily ledger + summary (≤ 62 days). |
+| GET | `/attendance/register?from&to&branchId&departmentId&employeeId` | `attendance.read` (scoped) | Ledger for everyone in scope. |
+| GET | `/attendance/exceptions` | `attendance.approve` (scoped) | Pending flagged check-ins, never your own. |
+| POST | `/attendance/events/:id/review` | `attendance.approve` | `{ decision: approve\|reject, note }`; reject needs a note; not on yourself. |
+| POST | `/attendance/corrections` | self, or approver with `employeeId` | Request (last 45 days, one pending per date) or manual entry (effective immediately, audited). |
+| GET | `/attendance/corrections?view=mine\|review&status` | self / approver | |
+| POST | `/attendance/corrections/:id/review` · `/withdraw` | approver · requester | |
+| GET · PUT | `/attendance/geofences` · `/attendance/geofences/:branchId` | `attendance.configure` (org to change) | `{ latitude, longitude, radiusM 25–5000, maxAccuracyM 5–2000, active }` |
+| GET · PUT | `/attendance/policy[?branchId]` | self (own branch) · `attendance.configure` | Working hours, grace, half/full-day minutes, weekly offs, WFH/field allowed. Branch override or organisation default. |
+| GET · POST · DELETE | `/holidays[?year]` · `/holidays/:id` | all staff · `attendance.configure` | Optional branch; optional holidays don't count as off days. |
+
+Flags: `no_geofence_configured`, `no_location`, `low_accuracy`, `outside_geofence`, `mock_location`, `impossible_travel` (> 250 km/h since last check), `clock_skew` (> 5 min), `wfh_not_allowed`, `field_not_allowed`.
+
+## Leave ✅ (M2)
+
+| Method | Path | Who | Notes |
+|---|---|---|---|
+| GET · POST · PATCH | `/leave/types` · `/leave/types/:id` | all staff · `leave.configure` | Quota, accrual (yearly pro-rated / monthly / none), carry-forward cap, half days, document threshold, unlimited (LOP). |
+| GET | `/leave/balances?employeeId&year` | `leave.read` (scoped) | opening + accrued + adjusted − used − pending = available. |
+| POST | `/leave/requests` | `leave.self` | `{ leaveTypeId, startDate, endDate, startHalf, endHalf, reason, documentRef? }`. Weekly offs and holidays are not counted; overlap → 409; insufficient balance → 400 `insufficient_balance`; within one calendar year. Routed to the reporting manager. |
+| GET | `/leave/requests?view=mine\|review\|all&status&from&to` | self / approver / reader | |
+| POST | `/leave/requests/:id/decide` | `leave.approve` (scoped, not own) | `{ decision, note, expectedVersion? }`; reject needs a note; 409 on stale version. Approval updates the attendance ledger. |
+| POST | `/leave/requests/:id/cancel` | owner / approver | Pending → withdrawn. Approved: owner before it starts (reason required), approver after. Balance restored. |
+| POST | `/leave/adjustments` | `leave.configure` (org) | `{ employeeId, leaveTypeId, year, delta, reason }`, not on yourself. |
+| POST | `/leave/carry-forward` | `leave.configure` (org) | `{ year }` → sets next year's opening = min(available, cap). Idempotent. |
+
+Every reporting manager can review their direct reports' attendance and leave (`team` scope in the base employee grants); department heads, branch managers, HR and management review at their wider scopes.
+
 ## Planned contracts 🗓
-
-**Attendance (M2)**
-`POST /attendance/check-in` / `check-out` `{ lat, lng, accuracyM, clientTime, mode: office|wfh|field, mockLocation?, deviceId }` → `{ result: verified|outside_geofence|low_accuracy|pending_exception, distanceM, flags[] }` · `GET /attendance/me?month=` · `GET /attendance?date=&branchId=` · `POST /attendance/corrections` · `POST /attendance/corrections/:id/decision` · `GET/PUT /geofences/:branchId` · `GET /attendance/reports/monthly`
-
-**Leave (M2)** `GET/POST /leave-types` · `GET /leave/balances/me` · `POST /leave/requests` · `POST /leave/requests/:id/{approve|reject|cancel|withdraw}` · `GET /leave/calendar?branchId=&departmentId=`
 
 **Payroll (M3)** `GET/POST /salary-components` · `PUT /employees/:id/salary` · `POST /payroll/runs` `{ period }` · `POST /payroll/runs/:id/{validate|review|approve|mark-paid|lock}` · `GET /payroll/runs/:id/register` · `GET /payroll/runs/:id/bank-export.csv` · `GET /payslips/me` · `GET /payslips/:id.pdf`
 

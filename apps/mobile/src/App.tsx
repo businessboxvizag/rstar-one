@@ -4,10 +4,11 @@ import { ActivityIndicator, FlatList, Image, Pressable, RefreshControl, StyleShe
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
 import { PARTNER_SIGNATURE, STAGE_LABELS, brand, type ContentStage } from "@rstar/shared";
 import { ApiError, api, login, logout, restoreSession } from "./api";
+import { AttendanceCard } from "./Attendance";
 
 /**
- * Milestone 1 mobile app: secure sign-in (with MFA), profile and "My work" from the live API.
- * Attendance check-in/out with GPS, leave, payslips and footage upload are added in their milestones;
+ * Mobile app: secure sign-in (with MFA), GPS attendance check-in/out (Milestone 2), and "My work".
+ * Leave screens, payslips and footage upload are added in their milestones;
  * no placeholder buttons are shown for features that do not work yet.
  */
 interface Me { user: { displayName: string; email: string }; roles: string[]; organisation: { productName: string } }
@@ -99,6 +100,7 @@ function Home({ onSignOut }: { onSignOut: () => void }) {
         <Pressable onPress={async () => { await logout(); onSignOut(); }} accessibilityRole="button"><Text style={{ color: brand.rstarRed }}>Sign out</Text></Pressable>
       </View>
       {error && <Text style={[s.error, { margin: 16 }]}>{error}</Text>}
+      <AttendanceCard />
       <Text style={s.section}>MY WORK</Text>
       <FlatList
         data={items}

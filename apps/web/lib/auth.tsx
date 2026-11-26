@@ -3,7 +3,7 @@
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
 import { useRouter } from "next/navigation";
 import type { PermissionKey, Scope } from "@rstar/shared";
-import { api, logout as apiLogout, refreshSession } from "./api";
+import { api, hasAccessToken, logout as apiLogout, refreshSession } from "./api";
 
 export interface Me {
   user: { id: string; email: string; displayName: string; kind: "staff" | "client"; employeeId: string | null; branchId: string | null; departmentId: string | null };
@@ -40,7 +40,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     (async () => {
-      const ok = await refreshSession();
+      // Just signed in on this page load: the access token is already in memory.
+      const ok = hasAccessToken() || (await refreshSession());
       if (!ok) {
         setLoading(false);
         router.replace("/login");

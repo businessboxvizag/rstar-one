@@ -19,6 +19,9 @@ import { consumeOneTimeToken, createSession, issueOneTimeToken } from "./service
 const MAX_FAILED = 5;
 const LOCK_MINUTES = 15;
 
+/** Seconds a just-rotated refresh token remains usable (concurrent refreshes from two tabs). */
+const REFRESH_GRACE_SECONDS = 20;
+
 export async function authRoutes(app: FastifyInstance) {
   const loginLimit = {
     config: {
@@ -75,19 +78,39 @@ export async function authRoutes(app: FastifyInstance) {
 
   app.post("/auth/refresh", async (req) => {
     const { refreshToken } = parse(RefreshInput, req.body);
+    const presented = sha256(refreshToken);
     const next = randomToken(32);
     const r = await app.db.query<{ id: string; user_id: string; organisation_id: string }>(
-      `UPDATE sessions s SET refresh_token_hash = $2, last_used_at = now()
+      `UPDATE sessions s SET previous_token_hash = s.refresh_token_hash, rotated_at = now(), refresh_token_hash = $2, last_used_at = now()
          FROM users u
         WHERE s.refresh_token_hash = $1 AND s.revoked_at IS NULL AND s.expires_at > now()
           AND u.id = s.user_id AND u.status = 'active'
         RETURNING s.id, s.user_id, u.organisation_id`,
-      [sha256(refreshToken), sha256(next)],
+      [presented, sha256(next)],
     );
-    const s = r.rows[0];
-    if (!s) throw unauthorized("Session expired");
+    let s = r.rows[0];
+    let rotated = true;
+    if (!s) {
+      // Previous token: inside the grace window it yields an access token only; outside it, it is
+      // treated as a replayed (possibly stolen) token and the whole session is revoked.
+      const prev = (
+        await app.db.query<{ id: string; user_id: string; organisation_id: string; in_grace: boolean }>(
+          `SELECT s.id, s.user_id, u.organisation_id, (s.rotated_at > now() - make_interval(secs => $2)) AS in_grace
+             FROM sessions s JOIN users u ON u.id = s.user_id
+            WHERE s.previous_token_hash = $1 AND s.revoked_at IS NULL AND s.expires_at > now() AND u.status = 'active'`,
+          [presented, REFRESH_GRACE_SECONDS],
+        )
+      ).rows[0];
+      if (prev && !prev.in_grace) {
+        await app.db.query("UPDATE sessions SET revoked_at = now() WHERE id = $1", [prev.id]);
+        await audit(app.db, { orgId: prev.organisation_id, actorUserId: prev.user_id, action: "auth.refresh_reuse_revoked", entityType: "session", entityId: prev.id, ...reqMeta(req) });
+      }
+      if (!prev?.in_grace) throw unauthorized("Session expired");
+      s = prev;
+      rotated = false;
+    }
     const accessToken = await app.tokens.sign({ sub: s.user_id, sid: s.id, org: s.organisation_id });
-    return { accessToken, refreshToken: next, expiresIn: app.config.ACCESS_TOKEN_TTL_SECONDS, sessionId: s.id };
+    return { accessToken, refreshToken: rotated ? next : null, expiresIn: app.config.ACCESS_TOKEN_TTL_SECONDS, sessionId: s.id };
   });
 
   app.post("/auth/logout", { preHandler: app.authenticate }, async (req) => {

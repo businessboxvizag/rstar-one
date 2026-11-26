@@ -6,7 +6,11 @@
     "orientation": "portrait",
     "icon": "./assets/rstar-tv-logo.png",
     "userInterfaceStyle": "light",
-    "splash": { "image": "./assets/rstar-tv-logo.png", "resizeMode": "contain", "backgroundColor": "#FFFFFF" },
+    "splash": {
+      "image": "./assets/rstar-tv-logo.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#FFFFFF"
+    },
     "ios": {
       "bundleIdentifier": "tv.rstar.one",
       "supportsTablet": true,
@@ -16,9 +20,27 @@
     },
     "android": {
       "package": "tv.rstar.one",
-      "adaptiveIcon": { "foregroundImage": "./assets/rstar-tv-logo.png", "backgroundColor": "#FFFFFF" },
-      "permissions": ["ACCESS_COARSE_LOCATION", "ACCESS_FINE_LOCATION"]
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/rstar-tv-logo.png",
+        "backgroundColor": "#FFFFFF"
+      },
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION"
+      ]
     },
-    "extra": { "apiUrl": "http://localhost:4000" }
+    "extra": {
+      "apiUrl": "http://localhost:4000"
+    },
+    "plugins": [
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "RSTAR ONE uses your location only when you tap Check in or Check out, to confirm office attendance. It never tracks you in the background.",
+          "isAndroidBackgroundLocationEnabled": false,
+          "isIosBackgroundLocationEnabled": false
+        }
+      ]
+    ]
   }
 }

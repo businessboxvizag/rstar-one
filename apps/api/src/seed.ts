@@ -38,6 +38,13 @@ export const SEED = {
     { name: "Avakai.com", prefix: "AVC", industry: "E-commerce" },
     { name: "Pulse Hospital", prefix: "PH", industry: "Healthcare" },
   ],
+  /** Starting leave types (common Indian defaults; HR edits quotas in Settings → Leave). */
+  leaveTypes: [
+    { code: "CL", name: "Casual leave", paid: true, annualQuota: 12, accrual: "monthly", carryForwardMax: 0, allowHalfDay: true, requiresDocumentAfterDays: null, unlimited: false },
+    { code: "SL", name: "Sick leave", paid: true, annualQuota: 12, accrual: "yearly", carryForwardMax: 6, allowHalfDay: true, requiresDocumentAfterDays: 2, unlimited: false },
+    { code: "EL", name: "Earned leave", paid: true, annualQuota: 15, accrual: "monthly", carryForwardMax: 30, allowHalfDay: false, requiresDocumentAfterDays: null, unlimited: false },
+    { code: "LOP", name: "Leave without pay", paid: false, annualQuota: 0, accrual: "none", carryForwardMax: 0, allowHalfDay: true, requiresDocumentAfterDays: null, unlimited: true },
+  ],
 } as const;
 
 export interface SeedOptions {
@@ -90,6 +97,20 @@ export async function seed(db: Db, opts: SeedOptions = {}) {
     for (const c of SEED.clients) {
       const cl = (await tx.query("INSERT INTO clients (organisation_id, name, industry) VALUES ($1,$2,$3) ON CONFLICT (organisation_id, name) DO UPDATE SET name = EXCLUDED.name RETURNING id", [orgId, c.name, c.industry])).rows[0];
       await tx.query("INSERT INTO content_sequences (organisation_id, client_id, prefix) VALUES ($1,$2,$3) ON CONFLICT DO NOTHING", [orgId, cl.id, c.prefix]);
+    }
+
+    // Attendance policy default (editable in Settings). Office geofences are NOT seeded:
+    // coordinates must be set by an admin from the real office location.
+    await tx.query(
+      `INSERT INTO attendance_policies (organisation_id) SELECT $1 WHERE NOT EXISTS (SELECT 1 FROM attendance_policies WHERE organisation_id = $1 AND branch_id IS NULL)`,
+      [orgId],
+    );
+    for (const t of SEED.leaveTypes) {
+      await tx.query(
+        `INSERT INTO leave_types (organisation_id, code, name, paid, annual_quota, accrual, carry_forward_max, allow_half_day, requires_document_after_days, unlimited)
+         VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) ON CONFLICT (organisation_id, code) DO NOTHING`,
+        [orgId, t.code, t.name, t.paid, t.annualQuota, t.accrual, t.carryForwardMax, t.allowHalfDay, t.requiresDocumentAfterDays, t.unlimited],
+      );
     }
 
     let adminUserId: string | null = null;

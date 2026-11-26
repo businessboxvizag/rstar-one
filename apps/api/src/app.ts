@@ -16,6 +16,8 @@ import { employeeRoutes } from "./modules/employees/routes.js";
 import { contentRoutes } from "./modules/content/routes.js";
 import { auditRoutes } from "./modules/audit/routes.js";
 import { notificationRoutes } from "./modules/notifications/routes.js";
+import { attendanceRoutes } from "./modules/attendance/routes.js";
+import { leaveRoutes } from "./modules/leave/routes.js";
 
 declare module "fastify" {
   interface FastifyInstance {
@@ -56,6 +58,9 @@ export async function buildApp(config: Config, opts: { db?: Db; logger?: boolean
   await app.register(cors, {
     origin: config.CORS_ORIGINS.split(",").map((s) => s.trim()),
     credentials: false,
+    // @fastify/cors only allows GET/HEAD/POST by default; the web app also uses PUT, PATCH and DELETE.
+    methods: ["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE"],
+    maxAge: 600,
   });
   await app.register(rateLimit, { global: true, max: 600, timeWindow: "1 minute" });
 
@@ -104,6 +109,8 @@ export async function buildApp(config: Config, opts: { db?: Db; logger?: boolean
   await app.register(contentRoutes, { prefix: "/v1" });
   await app.register(auditRoutes, { prefix: "/v1" });
   await app.register(notificationRoutes, { prefix: "/v1" });
+  await app.register(attendanceRoutes, { prefix: "/v1" });
+  await app.register(leaveRoutes, { prefix: "/v1" });
 
   app.addHook("onClose", async () => {
     if (!opts.db) await app.db.end();

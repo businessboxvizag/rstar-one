@@ -66,6 +66,12 @@ importers:
       expo-constants:
         specifier: ~17.1.7
         version: 17.1.8(expo@53.0.27(@babel/core@7.29.13)(react-native@0.79.5(@babel/core@7.29.13)(@types/react@19.1.8)(react@19.0.0))(react@19.0.0))(react-native@0.79.5(@babel/core@7.29.13)(@types/react@19.1.8)(react@19.0.0))
+      expo-crypto:
+        specifier: ~14.1.5
+        version: 14.1.5(expo@53.0.27(@babel/core@7.29.13)(react-native@0.79.5(@babel/core@7.29.13)(@types/react@19.1.8)(react@19.0.0))(react@19.0.0))
+      expo-location:
+        specifier: ~18.1.6
+        version: 18.1.6(expo@53.0.27(@babel/core@7.29.13)(react-native@0.79.5(@babel/core@7.29.13)(@types/react@19.1.8)(react@19.0.0))(react@19.0.0))
       expo-secure-store:
         specifier: ~14.2.3
         version: 14.2.4(expo@53.0.27(@babel/core@7.29.13)(react-native@0.79.5(@babel/core@7.29.13)(@types/react@19.1.8)(react@19.0.0))(react@19.0.0))
@@ -2256,6 +2262,11 @@ packages:
       expo: '*'
       react-native: '*'
 
+  expo-crypto@14.1.5:
+    resolution: {integrity: sha512-ZXJoUMoUeiMNEoSD4itItFFz3cKrit6YJ/BR0hjuwNC+NczbV9rorvhvmeJmrU9O2cFQHhJQQR1fjQnt45Vu4Q==}
+    peerDependencies:
+      expo: '*'
+
   expo-file-system@18.1.11:
     resolution: {integrity: sha512-HJw/m0nVOKeqeRjPjGdvm+zBi5/NxcdPf8M8P3G2JFvH5Z8vBWqVDic2O58jnT1OFEy0XXzoH9UqFu7cHg9DTQ==}
     peerDependencies:
@@ -2273,6 +2284,11 @@ packages:
     peerDependencies:
       expo: '*'
       react: '*'
+
+  expo-location@18.1.6:
+    resolution: {integrity: sha512-l5dQQ2FYkrBgNzaZN1BvSmdhhcztFOUucu2kEfDBMV4wSIuTIt/CKsho+F3RnAiWgvui1wb1WTTf80E8zq48hA==}
+    peerDependencies:
+      expo: '*'
 
   expo-modules-autolinking@2.1.15:
     resolution: {integrity: sha512-IUITUERdkgooXjr9bXsX0PmhrZUIGTMyP6NtmQpAxN5+qtf/I7ewbwLx1/rX7tgiAOzaYme+PZOp/o6yqIhFsw==}
@@ -6354,6 +6370,11 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
+  expo-crypto@14.1.5(expo@53.0.27(@babel/core@7.29.13)(react-native@0.79.5(@babel/core@7.29.13)(@types/react@19.1.8)(react@19.0.0))(react@19.0.0)):
+    dependencies:
+      base64-js: 1.5.1
+      expo: 53.0.27(@babel/core@7.29.13)(react-native@0.79.5(@babel/core@7.29.13)(@types/react@19.1.8)(react@19.0.0))(react@19.0.0)
+
   expo-file-system@18.1.11(expo@53.0.27(@babel/core@7.29.13)(react-native@0.79.5(@babel/core@7.29.13)(@types/react@19.1.8)(react@19.0.0))(react@19.0.0))(react-native@0.79.5(@babel/core@7.29.13)(@types/react@19.1.8)(react@19.0.0)):
     dependencies:
       expo: 53.0.27(@babel/core@7.29.13)(react-native@0.79.5(@babel/core@7.29.13)(@types/react@19.1.8)(react@19.0.0))(react@19.0.0)
@@ -6369,6 +6390,10 @@ snapshots:
     dependencies:
       expo: 53.0.27(@babel/core@7.29.13)(react-native@0.79.5(@babel/core@7.29.13)(@types/react@19.1.8)(react@19.0.0))(react@19.0.0)
       react: 19.0.0
+
+  expo-location@18.1.6(expo@53.0.27(@babel/core@7.29.13)(react-native@0.79.5(@babel/core@7.29.13)(@types/react@19.1.8)(react@19.0.0))(react@19.0.0)):
+    dependencies:
+      expo: 53.0.27(@babel/core@7.29.13)(react-native@0.79.5(@babel/core@7.29.13)(@types/react@19.1.8)(react@19.0.0))(react@19.0.0)
 
   expo-modules-autolinking@2.1.15:
     dependencies:
