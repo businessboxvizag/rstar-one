@@ -4,7 +4,7 @@ _Generated from `packages/shared/src/permissions.ts` by `pnpm --filter @rstar/sh
 
 Scopes: **Own** = records the person owns or is assigned to · **Team** = plus direct reports · **Dept** = their department (all branches) · **Branch** = their branch · **All** = whole organisation. A wider scope includes the narrower ones. Blank = no access. ⚠ = sensitive (always audited; withheld until MFA is set up for privileged roles).
 
-Every staff role also receives the base self-service grants: `employees.read`, `attendance.self`, `attendance.read`, `leave.self`, `leave.read`, `payroll.self`, `projects.read`, `tasks.self`, `content.read`, `media.read`, `assets.read`.
+Every staff role also receives the base self-service grants: `employees.read`, `attendance.self`, `attendance.read`, `attendance.approve`, `leave.self`, `leave.read`, `leave.approve`, `payroll.self`, `projects.read`, `tasks.self`, `content.read`, `media.read`, `assets.read`.
 
 ## Roles
 
@@ -47,13 +47,13 @@ HR Admin can create accounts and assign non-privileged roles. Only holders of `r
 | `employees.sensitive.read` ⚠<br><sub>View bank, salary and identity document details</sub> | All | All |  |  | All |  |  |  |  |  |  |  |  |  |  |
 | **Attendance** | | | | | | | | | | | | | | | |
 | `attendance.self`<br><sub>Check in/out and request corrections for oneself</sub> | All | Own | Own | Own | Own | Own | Own | Own | Own | Own | Own | Own | Own | Own |  |
-| `attendance.read`<br><sub>View attendance records</sub> | All | All | Branch | Dept | All | Own | Own | Own | Own | Own | Own | Own | Own | Own |  |
-| `attendance.approve` ⚠<br><sub>Approve corrections, exceptions and manual attendance</sub> | All | All | Branch | Dept | All |  |  |  |  |  |  |  |  |  |  |
+| `attendance.read`<br><sub>View attendance records</sub> | All | All | Branch | Dept | All | Team | Team | Team | Team | Team | Team | Team | Team | Team |  |
+| `attendance.approve` ⚠<br><sub>Approve corrections, exceptions and manual attendance</sub> | All | All | Branch | Dept | All | Team | Team | Team | Team | Team | Team | Team | Team | Team |  |
 | `attendance.configure` ⚠<br><sub>Configure geofences, shifts, late/early rules</sub> | All |  |  |  | All |  |  |  |  |  |  |  |  |  |  |
 | **Leave** | | | | | | | | | | | | | | | |
 | `leave.self`<br><sub>Apply for, cancel and view own leave</sub> | All | Own | Own | Own | Own | Own | Own | Own | Own | Own | Own | Own | Own | Own |  |
-| `leave.read`<br><sub>View leave requests and balances</sub> | All | All | Branch | Dept | All | Own | Own | Own | Own | Own | Own | Own | Own | Own |  |
-| `leave.approve`<br><sub>Approve or reject leave requests</sub> | All | All | Branch | Dept | All |  |  |  |  |  |  |  |  |  |  |
+| `leave.read`<br><sub>View leave requests and balances</sub> | All | All | Branch | Dept | All | Team | Team | Team | Team | Team | Team | Team | Team | Team |  |
+| `leave.approve`<br><sub>Approve or reject leave requests</sub> | All | All | Branch | Dept | All | Team | Team | Team | Team | Team | Team | Team | Team | Team |  |
 | `leave.configure` ⚠<br><sub>Configure leave types, accrual and carry-forward</sub> | All |  |  |  | All |  |  |  |  |  |  |  |  |  |  |
 | **Payroll** | | | | | | | | | | | | | | | |
 | `payroll.self`<br><sub>View and download own payslips</sub> | All | Own | Own | Own | Own | Own | Own | Own | Own | Own | Own | Own | Own | Own |  |
