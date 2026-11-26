@@ -49,3 +49,23 @@ pnpm test             # shared unit tests + API integration tests against rstar_
 ## Mobile builds
 
 Expo EAS: `eas build -p android` / `-p ios`. Requires an Expo account, Google Play Console account and Apple Developer Program membership (blocked on accounts).
+
+## Vercel (team `business-box`)
+
+Two Vercel projects from the same GitHub repository, plus a hosted Postgres:
+
+| Project | Root directory | Config | Environment variables |
+|---|---|---|---|
+| `rstar-one-web` | `apps/web` | `apps/web/vercel.json` | `NEXT_PUBLIC_API_URL`, `API_INTERNAL_URL` = the API project's URL |
+| `rstar-one-api` | `apps/api` | `apps/api/vercel.json` (serverless entry `api/index.ts`) | everything in `apps/api/.env.example`: `DATABASE_URL` (pooled), `JWT_SECRET`, `DATA_ENCRYPTION_KEY`, `CORS_ORIGINS` = web URL, `APP_BASE_URL` = web URL, `MFA_ENFORCEMENT=on`, `MAIL_TRANSPORT`, `NODE_ENV` |
+
+Database: Neon Postgres from the Vercel Marketplace (pick the Singapore or Mumbai region if offered, close to India). Use the **pooled** connection string for `DATABASE_URL`. Run migrations and the seed once from a trusted machine:
+
+```bash
+DATABASE_URL="<neon direct (non-pooled) URL>" pnpm db:migrate
+DATABASE_URL="<neon direct URL>" SEED_ADMIN_EMAIL=… SEED_ADMIN_NAME=… SEED_ADMIN_PASSWORD=… pnpm db:seed
+```
+
+Notes:
+* `NODE_ENV=production` refuses to start until `MAIL_TRANSPORT=smtp` is configured. Until SMTP credentials exist, deploy as a **preview/staging** environment with `NODE_ENV=development` and `MAIL_TRANSPORT=log` (test mode, clearly not production).
+* The background worker (notification delivery, analytics pulls, proxies) from later milestones does not fit serverless; it will run on Vercel Cron for light jobs or a small container host.
