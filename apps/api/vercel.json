@@ -1,7 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "installCommand": "cd ../.. && pnpm install --frozen-lockfile",
-  "buildCommand": "cd ../.. && pnpm --filter @rstar/shared build && bash apps/api/scripts/vercel-db.sh",
+  "buildCommand": "cd ../.. && pnpm --filter @rstar/shared build && bash apps/api/scripts/vercel-db.sh && mkdir -p apps/api/public",
   "functions": {
     "api/index.ts": {
       "maxDuration": 30,
@@ -13,5 +13,6 @@
       "source": "/(.*)",
       "destination": "/api/index"
     }
-  ]
+  ],
+  "outputDirectory": "public"
 }
