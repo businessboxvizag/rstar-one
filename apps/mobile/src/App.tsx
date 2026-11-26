@@ -1,8 +1,8 @@
 import { StatusBar } from "expo-status-bar";
 import { useCallback, useEffect, useState } from "react";
-import { ActivityIndicator, FlatList, Image, Pressable, RefreshControl, StyleSheet, Text, TextInput, View } from "react-native";
+import { ActivityIndicator, Alert, SectionList, Image, Pressable, RefreshControl, StyleSheet, Text, TextInput, View } from "react-native";
 import { SafeAreaProvider, SafeAreaView } from "react-native-safe-area-context";
-import { PARTNER_SIGNATURE, STAGE_LABELS, brand, type ContentStage } from "@rstar/shared";
+import { PARTNER_SIGNATURE, STAGE_LABELS, TASK_STATUS_LABEL, brand, type ContentStage, type TaskStatus } from "@rstar/shared";
 import { ApiError, api, login, logout, restoreSession } from "./api";
 import { AttendanceCard } from "./Attendance";
 
@@ -70,6 +70,7 @@ function SignIn({ onDone }: { onDone: () => void }) {
 function Home({ onSignOut }: { onSignOut: () => void }) {
   const [me, setMe] = useState<Me | null>(null);
   const [items, setItems] = useState<Item[]>([]);
+  const [tasks, setTasks] = useState<Task[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [refreshing, setRefreshing] = useState(false);
   const load = useCallback(async () => {
@@ -80,6 +81,8 @@ function Home({ onSignOut }: { onSignOut: () => void }) {
       setMe(m);
       const r = await api<{ items: Item[] }>("/content?mine=true&limit=30").catch(() => ({ items: [] }));
       setItems(r.items);
+      const t = await api<{ items: Task[] }>("/tasks?view=mine").catch(() => ({ items: [] as Task[] }));
+      setTasks(t.items);
     } catch (e) {
       setError(e instanceof Error ? e.message : "Could not load");
     } finally {
@@ -101,25 +104,74 @@ function Home({ onSignOut }: { onSignOut: () => void }) {
       </View>
       {error && <Text style={[s.error, { margin: 16 }]}>{error}</Text>}
       <AttendanceCard />
-      <Text style={s.section}>MY WORK</Text>
-      <FlatList
-        data={items}
-        keyExtractor={(i) => i.id}
+      <SectionList<Row, { key: string; title: string; data: Row[] }>
+        sections={[
+          { key: "tasks", title: "MY TASKS", data: tasks.map((t): Row => ({ kind: "task", t })) },
+          { key: "content", title: "MY CONTENT", data: items.map((c): Row => ({ kind: "content", c })) },
+        ]}
+        keyExtractor={(x) => (x.kind === "task" ? `t${x.t.id}` : `c${x.c.id}`)}
         refreshControl={<RefreshControl refreshing={refreshing} onRefresh={load} />}
-        ListEmptyComponent={!refreshing ? <Text style={[s.muted, { textAlign: "center", marginTop: 24 }]}>Nothing assigned to you right now.</Text> : null}
-        renderItem={({ item }) => (
-          <View style={s.card}>
-            <Text style={s.code}>{item.content_code}</Text>
-            <Text style={s.itemTitle}>{item.title}</Text>
-            <Text style={s.muted}>{STAGE_LABELS[item.stage]}{item.stage_due_at ? ` · due ${new Date(item.stage_due_at).toLocaleDateString("en-IN")}` : ""}</Text>
-          </View>
-        )}
+        renderSectionHeader={({ section }) => <Text style={s.section}>{section.title}</Text>}
+        renderSectionFooter={({ section }) =>
+          !section.data.length && !refreshing ? <Text style={[s.muted, { marginHorizontal: 16 }]}>{section.key === "tasks" ? "No open tasks." : "No content assigned to you."}</Text> : null}
+        stickySectionHeadersEnabled={false}
+        renderItem={({ item }) =>
+          item.kind === "task" ? (
+            <TaskRow t={item.t} onChanged={load} />
+          ) : (
+            <View style={s.card}>
+              <Text style={s.code}>{item.c.content_code}</Text>
+              <Text style={s.itemTitle}>{item.c.title}</Text>
+              <Text style={s.muted}>{STAGE_LABELS[item.c.stage]}{item.c.stage_due_at ? ` · due ${new Date(item.c.stage_due_at).toLocaleDateString("en-IN")}` : ""}</Text>
+            </View>
+          )
+        }
       />
     </View>
   );
 }
 
+type Row = { kind: "task"; t: Task } | { kind: "content"; c: Item };
+
+interface Task {
+  id: string; number: number; title: string; status: TaskStatus; priority: string; dueDate: string | null; overdue: boolean;
+  createdBy: { name: string; isMe: boolean }; version: number;
+}
+
+function TaskRow({ t, onChanged }: { t: Task; onChanged: () => void }) {
+  const [busy, setBusy] = useState(false);
+  const next: TaskStatus | null = t.status === "open" || t.status === "blocked" ? "in_progress" : t.status === "in_progress" ? "done" : null;
+  const set = async (status: TaskStatus) => {
+    setBusy(true);
+    try {
+      await api(`/tasks/${t.id}/status`, { method: "POST", body: { status, expectedVersion: t.version } });
+      onChanged();
+    } catch (e) {
+      Alert.alert("Could not update", e instanceof Error ? e.message : "Please try again");
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <View style={s.card}>
+      <Text style={s.muted}>T-{t.number} · from {t.createdBy.isMe ? "you" : t.createdBy.name}{t.priority === "urgent" || t.priority === "high" ? ` · ${t.priority}` : ""}</Text>
+      <Text style={s.itemTitle}>{t.title}</Text>
+      <View style={{ flexDirection: "row", alignItems: "center", justifyContent: "space-between", marginTop: 4 }}>
+        <Text style={[s.muted, t.overdue && { color: "#B42318", fontWeight: "600" }]}>
+          {TASK_STATUS_LABEL[t.status]}{t.dueDate ? ` · due ${new Date(`${t.dueDate}T00:00:00`).toLocaleDateString("en-IN")}` : ""}{t.overdue ? " · overdue" : ""}
+        </Text>
+        {next && (
+          <Pressable onPress={() => void set(next)} disabled={busy} style={[s.small, busy && { opacity: 0.5 }]} accessibilityRole="button">
+            <Text style={{ color: "#fff", fontWeight: "600" }}>{next === "done" ? "Mark done" : t.status === "blocked" ? "Resume" : "Start"}</Text>
+          </Pressable>
+        )}
+      </View>
+    </View>
+  );
+}
+
 const s = StyleSheet.create({
+  small: { backgroundColor: brand.rstarRed, borderRadius: 8, paddingVertical: 6, paddingHorizontal: 12 },
   root: { flex: 1, backgroundColor: brand.canvas },
   center: { flex: 1, alignItems: "center", justifyContent: "center", padding: 24, backgroundColor: brand.surface },
   title: { fontSize: 24, fontWeight: "700", color: brand.ink, marginTop: 8, marginBottom: 24 },
