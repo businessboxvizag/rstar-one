@@ -4,7 +4,12 @@ import "./globals.css";
 export const metadata: Metadata = {
   title: { default: "RSTAR ONE", template: "%s · RSTAR ONE" },
   description: "RSTAR ONE — organisation operating system for RSTAR TV. Technology & Operations by BusinessBOX.",
-  icons: { icon: "/rstar-tv-logo.png" },
+  icons: {
+    icon: [{ url: "/icon-192.png", sizes: "192x192", type: "image/png" }, { url: "/rstar-tv-logo.png" }],
+    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
+  },
+  manifest: "/manifest.webmanifest",
+  appleWebApp: { capable: true, title: "RSTAR ONE", statusBarStyle: "default" },
 };
 
 export const viewport: Viewport = { themeColor: "#CC323A", width: "device-width", initialScale: 1 };
